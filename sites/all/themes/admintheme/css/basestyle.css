@@ -246,7 +246,7 @@ ul.tabs--primary li.active a:hover {
   position: absolute;
   font-size: 22px;
   z-index: 1035;
-  top: 34px;
+  top: 13px;
   right: -38px;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.7);
