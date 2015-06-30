@@ -1,0 +1,74 @@
+<?php
+/**
+ * @file
+ * The webform component module.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function webform_ytpicker_theme($existing, $type, $theme, $path) {
+  return array(
+    'webform_ytpicker_iframe' => array(
+      'variables' => array(),
+      'path' => drupal_get_path('module', 'webform_ytpicker') . '/tpl',
+      'template' => 'webform-ytpicker-iframe',
+    ),
+  );
+}
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function webform_ytpicker_webform_component_info() {
+  $components = array();
+  $components['ytpicker'] = array(
+    'label' => t('Youtube picker'),
+    'description' => t('Add youtube movies users to choose between.'),
+    'features' => array(
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'title_display' => FALSE,
+      'title_inline' => FALSE,
+      'conditional' => FALSE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/ytpicker.inc',
+  );
+  return $components;
+}
+
+/**
+ * The component Form.
+ */
+function webform_ytpicker_component_form($component) {
+  $form = array();
+  $form['extra']['yt'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Youtube picker',
+  );
+  $width = isset($component['extra']['yt']['width']) ? $component['extra']['yt']['width'] : '560';
+  $form['extra']['yt']['width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Youtube video width'),
+    '#default_value' => $width,
+  );
+  $height = isset($component['extra']['yt']['height']) ? $component['extra']['yt']['height'] : '315';
+  $form['extra']['yt']['height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Youtube video height'),
+    '#default_value' => $height,
+  );
+  $form['extra']['yt']['ytp'] = array(
+    '#type' => 'textarea',
+    '#title' => t("Youtube video's"),
+    '#description' => t('enter them as following: "Name|youtube_url'),
+    '#default_value' => $component['extra']['yt']['ytp'],
+  );
+  return $form;
+}

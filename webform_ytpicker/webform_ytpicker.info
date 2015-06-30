@@ -1,0 +1,6 @@
+name = Webform Youtube Picker component
+description = "Let user choose between X youtube movies."
+package = Webform
+core = 7.x
+;configure = admin/config
+files[] = webform_ytpicker.module
