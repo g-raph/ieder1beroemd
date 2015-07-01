@@ -49,6 +49,7 @@ function _webform_edit_ytpicker($component) {
 function _webform_render_ytpicker($component, $value = NULL, $filter = TRUE) {
   $node = isset($component['nid']) ? node_load($component['nid']) : NULL;
   $videos = _webform_ytpicker_options($component);
+  _webform_ytpicker_add_analysis_data($videos, $component);
   $width = $component['extra']['yt']['width'];
   $height = $component['extra']['yt']['height'];
   $iframe_tpl = theme('webform_ytpicker_iframe', array(
@@ -56,7 +57,6 @@ function _webform_render_ytpicker($component, $value = NULL, $filter = TRUE) {
     'height' => $height,
     'vidId' => '{vid_id}',
     ));
-  $results_tpl = theme('webform_ytpicker_results');
 
   $sets = array(
     'webform_ytpicker' => array(
@@ -234,6 +234,47 @@ function _webform_csv_data_ytpicker($component, $export_options, $value) {
   $video = _webform_ytpicker_get_by_ytib($value[0], $videos);
   return !isset($video->name) ? '' : $video->name;
 }
+
+/**
+ * Adds amount of votes to Javascript array.
+ */
+function _webform_ytpicker_add_analysis_data(&$videos, $component) {
+  $rows = array();
+  $other = array();
+  $normal_count = 0;
+  foreach ($videos as $video) {
+    $options[] = $video->ytid;
+  }
+  $query = db_select('webform_submitted_data', 'wsd', array('fetch' => PDO::FETCH_ASSOC))
+    ->condition('wsd.nid', $component['nid'])
+    ->condition('wsd.cid', $component['cid'])
+    ->condition('wsd.data', '', '<>');
+  $query->addExpression('COUNT(wsd.data)', 'datacount');
+  $result = $query
+    ->condition('wsd.data', $options, 'IN')
+    ->fields('wsd', array('data'))
+    ->groupBy('wsd.data')
+    ->execute();
+  $total = 0;
+  $result_set = array();
+  foreach ($result as $data) {
+    $result_set[] = $data;
+    $total  = $total + $data['datacount'];
+  }
+  foreach ($videos as $key => &$video) {
+    foreach ($result_set as $data) {
+      if (isset($data['data']) && $data['data'] == $video->ytid) {
+        $display_option = $video->name;
+        $rows[$data['data']] = array(webform_filter_xss($display_option), $data['datacount']);
+        $normal_count += $data['datacount'];
+        $video->analysis = new stdClass();
+        $video->analysis->count = intval($data['datacount']);
+        $video->analysis->total = intval($total);
+      }
+    }
+  }
+}
+
 
 /**
  * Generate a list of options for a select list.

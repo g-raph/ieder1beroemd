@@ -4,3 +4,10 @@ package = Webform
 core = 7.x
 ;configure = admin/config
 files[] = webform_ytpicker.module
+
+; Information added by Drupal.org packaging script on 2015-07-01
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "webform_ytpicker"
+datestamp = "1435736944"
+
