@@ -57,7 +57,6 @@ function _webform_render_ytpicker($component, $value = NULL, $filter = TRUE) {
     'height' => $height,
     'vidId' => '{vid_id}',
     ));
-
   $sets = array(
     'webform_ytpicker' => array(
       'components' => array(
@@ -243,9 +242,9 @@ function _webform_ytpicker_add_analysis_data(&$videos, $component) {
   $other = array();
   $normal_count = 0;
   $options = array();
-  if(empty($options)) {
-    return array();
-  }
+  // if(empty($options)) {
+  //   return array();
+  // }
   foreach ($videos as $video) {
     $options[] = $video->ytid;
   }
@@ -265,9 +264,11 @@ function _webform_ytpicker_add_analysis_data(&$videos, $component) {
     $result_set[] = $data;
     $total  = $total + $data['datacount'];
   }
+
   foreach ($videos as $key => &$video) {
     foreach ($result_set as $data) {
       if (isset($data['data']) && $data['data'] == $video->ytid) {
+        $video->thumbnail = 'http://img.youtube.com/vi/' . $video->ytid . '/0.jpg';
         $display_option = $video->name;
         $rows[$data['data']] = array(webform_filter_xss($display_option), $data['datacount']);
         $normal_count += $data['datacount'];
