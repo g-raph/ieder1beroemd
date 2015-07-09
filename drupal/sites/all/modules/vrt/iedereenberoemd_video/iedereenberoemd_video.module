@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the iedereenberoemd_video feature.
+ */
+
+include_once 'iedereenberoemd_video.features.inc';

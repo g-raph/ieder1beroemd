@@ -1,0 +1,327 @@
+<?php
+/**
+ * @file
+ * The webform component to forward to selligent.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function webform_selligent_permission() {
+  return array(
+    'send webform data to selligent' => array(
+      'title' => t('Send webformd ata to selligent'),
+      'description' => t('Send webform data to selligent.'),
+    ),
+    'configure selligent api' => array(
+      'title' => t('Configure selligent api'),
+      'description' => t('Configure selligent api'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function webform_selligent_menu() {
+  $items = array();
+  $items['admin/config/api'] = array(
+    'title' => 'Api\'s',
+    'description' => 'Api\'s',
+    'position' => 'right',
+    'weight' => 0,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -99,
+  );
+  $items['admin/config/api/selligent'] = array(
+    'title' => 'Selligent api',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('webform_selligent_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('configure selligent api'),
+    'weight' => 99,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['node/%webform_menu/webform/selligent'] = array(
+    'title' => 'Selligent settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('webform_selligent_forward_to_selligent_form', 1),
+    'access callback' => 'webform_selligent_forward_webform',
+    'access arguments' => array(1),
+    'weight' => 99,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Builds the settings form().
+ */
+function webform_selligent_settings_form($form, &$form_state) {
+  $form['api'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Selligent api',
+  );
+  $form['api']['webform_selligent_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'APi url',
+    '#default_value' => variable_get('webform_selligent_api_url', ''),
+  );
+  $form['api']['webform_selligent_api_brand'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Brand',
+    '#default_value' => variable_get('webform_selligent_api_brand', ''),
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * The access handler.
+ */
+function webform_selligent_forward_webform($node) {
+  if (user_access('send webform data to selligent')) {
+    $var = 'webform_node_' . $node->type;
+    $enabled = variable_get($var, FALSE);
+    if ($enabled) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Submit handler to post to remote.
+ */
+function webform_selligent_webform_submission_insert($webform_node, $submission) {
+  $nids = variable_get('selligent_enabled_nodes', array());
+  if (in_array($webform_node->nid, $nids)) {
+    if (variable_get('selligent_trigger_' . $submission->nid, 'cron') == 'submission') {
+      _webform_selligent_push_submission($submission, $webform_node->webform['components']);
+      _webform_selligent_set_last_submitted_id($submission->nid, $submission->sid);
+    }
+  }
+}
+
+/**
+ * Render selligent form for this node.
+ */
+function webform_selligent_forward_to_selligent_form($form, &$form_state, $node) {
+  module_load_include('inc', 'webform', 'includes/webform.submissions');
+  $nid = $node->nid;
+  entity_get_controller('node')->resetCache(array($nid));
+  $node = node_load($nid);
+
+  $form['#node'] = $node;
+  $form['selligent'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Submission settings'),
+    '#collapsible' => TRUE,
+    '#tree' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => -4,
+  );
+  $nids = variable_get('selligent_enabled_nodes', array());
+  $default = FALSE;
+  if (in_array($node->nid, $nids)) {
+    $default = TRUE;
+  }
+  $form['selligent']['selligent_enabled_' . $node->nid] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Selligent submitting enabled for "%title"', array('%title' => $node->title)),
+    '#default_value' => $default ,
+    '#parents' => array('selligent','selligent_enabled_' . $node->nid),
+  );
+
+  $options = array(
+    'cron' => 'Cron',
+    'submission' => 'Submission',
+  );
+  $form['selligent']['selligent_trigger_' . $node->nid] = array(
+    '#type' => 'radios',
+    '#options' => $options,
+    '#title' => t('Send to selligent on'),
+    '#default_value' => variable_get('selligent_trigger_' . $node->nid, 'cron'),
+    '#parents' => array('selligent','selligent_trigger_' . $node->nid),
+    '#description' => t('"On submission" may give you a performance hit when many people submit at the same time.'),
+  );
+  $form['push'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Selligent settings'),
+    '#collapsible' => TRUE,
+    '#tree' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => 0,
+  );
+  $form['actions'] = array(
+    '#type' => 'actions',
+    '#weight' => 300,
+  );
+  $count = webform_get_submission_count($node->nid);
+  $last_submitted = _webform_selligent_get_last_submitted_id($node->nid);
+  $q = 'select max(sid) from webform_submissions where nid = :nid';
+  $max = db_query($q, array(':nid' => $node->nid))->fetchField();
+
+  if ($max == $last_submitted) {
+    $form['push']['info'] = array(
+      '#markup' => '<div>' . $count . ' submissions in total. All pushed.</div>',
+    );
+  }
+  else {
+    $form['push']['info'] = array(
+      '#markup' => '<div>' . $count . ' submissions in total. Pending submissions can be sent. </div>',
+    );
+  }
+
+  $form['push']['last'] = array(
+    '#markup' => '<div> last submission = ' . $last_submitted . '</div>',
+  );
+
+  $form['push']['push_now'] = array(
+    '#type' => 'submit',
+    '#value' => t('Push selligent data now'),
+    '#submit' => array('webform_selligent_push_now_submit'),
+  );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  $form['#submit'] = array('webform_selligent_configure_form_submit_save');
+  return $form;
+}
+
+/**
+ * Submit handler for push now button.
+ */
+function webform_selligent_push_now_submit($form, $form_state) {
+  $node = $form['#node'];
+  $subs = webform_selligent_push_submissions_node($node->nid);
+  $count = count($subs);
+  drupal_set_message(t('%count inzendingen verzonden.', array('%count' => $count)), 'status', FALSE);
+  return '';
+}
+
+/**
+ * Implements hook_cronapi().
+ */
+function webform_selligent_cronapi() {
+  $items['webform_selligent_do_cron'] = array(
+    'description' => 'Push submissions to selligent.',
+    'rule' => '*/30 * * * *',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
+ */
+function webform_selligent_cron() {
+  webform_selligent_do_cron();
+}
+
+/**
+ * Do actual cron functionalities().
+ */
+function webform_selligent_do_cron() {
+  $nids = variable_get('selligent_enabled_nodes', array());
+  foreach ($nids as $nid) {
+    $subs = webform_selligent_push_submissions_node($nid);
+    unset($subs);
+  }
+}
+
+/**
+ * Submit handler for webform_configure_form() that saves the node.
+ *
+ * This is separate from webform_configure_form_submit() to allow other modules
+ * to add properties if needed into the $form['#node'] object before save.
+ */
+function webform_selligent_configure_form_submit_save($form, &$form_state) {
+  if ($form_state['values']['selligent']['selligent_enabled_' . $form['#node']->nid]) {
+    $nids = variable_get('selligent_enabled_nodes', array());
+    if (!in_array($form['#node']->nid, $nids)) {
+      $nids[] = $form['#node']->nid;
+      variable_set('selligent_enabled_nodes', $nids);
+    }
+  }
+  else {
+    $nids = variable_get('selligent_enabled_nodes', array());
+    if (in_array($form['#node']->nid, $nids)) {
+      foreach ($nids as $key => $nid) {
+        if ($nid == $form['#node']->nid) {
+          unset($nids[$key]);
+        }
+      }
+      variable_set('selligent_enabled_nodes', $nids);
+    }
+  }
+  variable_set('selligent_trigger_' . $form['#node']->nid, $form_state['values']['selligent']['selligent_trigger_' . $form['#node']->nid]);
+  drupal_set_message('Your settings were saved.');
+}
+
+
+/**
+ * Push subs for one node.
+ */
+function webform_selligent_push_submissions_node($nid) {
+  module_load_include('inc', 'webform', 'includes/webform.submissions');
+  $node = node_load($nid);
+  $last_submission_id = _webform_selligent_get_last_submitted_id($nid);
+  $subs = _webform_selligent_load_submissions($node, $last_submission_id);
+  $components = $node->webform['components'];
+  foreach ($subs as $sub) {
+    _webform_selligent_push_submission($sub, $components);
+    $last_sid = $sub->sid;
+  }
+  _webform_selligent_set_last_submitted_id($nid, $last_sid);
+}
+
+/**
+ * Set the last submitted id.
+ */
+function _webform_selligent_set_last_submitted_id($nid, $sid) {
+  variable_set('webform_selligent_' . $nid . '_last', $sid);
+}
+
+/**
+ * Return the last submitted submission.
+ */
+function _webform_selligent_get_last_submitted_id($nid) {
+  $last_submission_id = variable_get('webform_selligent_' . $nid . '_last', 0);
+  return $last_submission_id;
+}
+
+/**
+ * Load webform submissions starting from submission_id.
+ */
+function _webform_selligent_load_submissions($node, $last_submission_id = 0) {
+  $pager_count = variable_get('webform_selligent_cron_amount', 50);
+  $submissions = webform_get_submissions(array('nid' => $node->nid), array(), $pager_count);
+  return $submissions;
+}
+
+
+/**
+ * Core functionality of the module.
+ */
+function _webform_selligent_push_submission($submission_data, $components) {
+  foreach ($submission_data->data as $key => $val) {
+    $keyname = $components[$key]['form_key'];
+    $submission_data->component_data[$keyname] = $val;
+  }
+  _webform_selligent_submit_data($submission_data);
+}
+
+/**
+ * Submit the actual data
+ */
+function _webform_selligent_submit_data($data){
+  $url = variable_get('webform_selligent_api_url', '');
+  $brand = variable_get('webform_selligent_api_brand', '');
+  //Proxy
+  dd('SUBMIT');
+  dd($data);
+}

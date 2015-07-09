@@ -1,0 +1,222 @@
+<?php
+/**
+ * @file
+ * The iedereenberoemd funcionalities.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function iedereenberoemd_permission() {
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function iedereenberoemd_menu() {
+  $items = array();
+  $items['front'] = array(
+    'title' => 'Frontpage',
+    'page callback' => 'iedereenberoemd_front_page',
+    'access arguments' => array('access content'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/iedereen_beroemd'] = array(
+    'title' => 'Iedereen beroemd',
+    'description' => 'Iedereen beroemd',
+    'position' => 'right',
+    'weight' => 0,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -99,
+  );
+  $items['admin/config/iedereen_beroemd/algemene_instellingen'] = array(
+    'title' => 'Algemene instellingen',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('iedereenberoemd_general_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer content'),
+    'weight' => 99,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+/**
+ *
+ */
+function iedereenberoemd_front_page(){
+  return '';
+}
+
+/**
+ *
+ */
+function iedereenberoemd_theme($existing, $type, $theme, $path) {
+  return array(
+    'iedereenberoemd_winners' => array(
+      'variables' => array('nodeslist' => ''),
+      'template' => 'iedereenberoemd-winners',
+      'path' => drupal_get_path('module', 'iedereenberoemd').'/template',
+    ),
+  );
+}
+
+function iedereenberoemd_general_settings_form(){
+	$form['iedereen_beroemd'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Iedereen beroemd',
+  );
+  $form['iedereen_beroemd']['webform_selligent_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'APi url',
+    '#default_value' => variable_get('webform_selligent_api_url', ''),
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_block_info
+ */
+function iedereenberoemd_block_info() {
+  // This example comes from node.module.
+  $blocks['iedereemberoemd_winners'] = array(
+    'info' => t('Iedereen beroemd Winners list'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view
+ */
+function iedereenberoemd_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'iedereemberoemd_winners':
+      $block['subject'] = t('Winnaars');
+      $block['content'] = iedereenberoemd_block_winners();
+      // var_dump($block);
+      // die();
+      break;
+  }
+  return $block;
+}
+
+/**
+ *
+ */
+function iedereenberoemd_block_winners() {
+  $winners = _iedereenberoemd_get_winners();
+  if (!empty($winners)) {
+    $block['content'] = array(
+      '#theme' => 'iedereenberoemd_winners',
+      '#nodeslist' => $winners,
+    );
+  }
+  return $block;
+}
+
+/**
+ *
+ */
+function _iedereenberoemd_get_winners() {
+  $query = "SELECT *
+    FROM node n,
+         field_data_field_youtube_video v,
+         field_data_field_winner w
+    WHERE type = 'video'
+    AND status = '1'
+    AND n.nid = w.entity_id
+    AND n.nid = v.entity_id
+    AND w.field_winner_value = 1";
+  $res = db_query($query);
+  foreach ($res as $item) {
+    $nid = $item->nid;
+    $node = node_load($nid);
+    $v = node_view($node, 'teaser');
+    $r = render($v);
+    $items[] = $r;
+  }
+  $list = theme_item_list(array(
+    'items' => $items,
+    'type' => 'ul',
+    'title' => '',
+    'attributes' => array(),
+    ));
+  return $list;
+}
+
+function iedereenberoemd_ds_fields_info($entity_type) {
+  $fields = array();
+  $fields['iedereenberoemd_winner_votes'] = array(
+    'title' => t('Votes'),
+    'field_type' => DS_FIELD_TYPE_FUNCTION,
+    'ui_limit' => array('video|*'),
+    'function' => '_iedereenberoemd_ds_render_votes',
+  );
+  $fields['iedereenberoemd_yt_thumb'] = array(
+    'title' => t('Youtube Thumbnail'),
+    'field_type' => DS_FIELD_TYPE_FUNCTION,
+    'ui_limit' => array('video|*'),
+    'function' => '_iedereenberoemd_ds_render_thumbnail',
+  );
+  return array('node' => $fields);
+}
+
+/**
+ *
+ */
+function _iedereenberoemd_ds_render_thumbnail($field){
+  $node = $field['entity'];
+  $vid_id = $node->field_youtube_video['und'][0]['video_id'];
+  var_dump($vid_id);
+  $url = 'http://img.youtube.com/vi/' . $vid_id . '/0.jpg';
+  $img = '<img src="' . $url . '" class="youtubethumb">';
+  return $img;
+}
+
+/**
+ *
+ */
+function _iedereenberoemd_ds_render_votes($field){
+  $node = $field['entity'];
+  $vid_id = $node->field_youtube_video['und'][0]['video_id'];
+  $votecount = '';
+  $query = db_select('webform_submitted_data', 'wsd', array('fetch' => PDO::FETCH_ASSOC))
+    //->condition('wsd.nid', $component['nid'])
+    //->condition('wsd.cid', $component['cid'])
+    ->condition('wsd.data', '', '<>');
+ $query->addExpression('COUNT(wsd.data)', 'datacount');
+    $result = $query
+      ->condition('wsd.data', array($vid_id), 'IN')
+      ->fields('wsd', array('data'))
+      ->groupBy('wsd.data')
+      ->execute();
+    foreach ($result as $data) {
+      if (!empty($data['datacount'])) {
+        $votecount = $data['datacount'];
+      }
+    }
+    if(empty($votecount)) {
+      return '';
+    }
+    return '<div class="votecount"> ALLO ' . $votecount . '</div>';
+}
+
+/**
+ * Custom alter hook.
+ */
+function iedereenberoemd_webform_ytpicker_videos_list_alter(&$videos, $hook) {
+  if($hook == 'analysis' || $hook == 'table' || $hook == 'csv'|| $hook == 'display') {
+    return false;
+  }
+  foreach($videos as $vid_key => &$video){
+    $node = node_load($video->entity_id);
+    if ($node->field_winner['und'][0]['value']) {
+      unset($videos[$vid_key]);
+    }
+  }
+}

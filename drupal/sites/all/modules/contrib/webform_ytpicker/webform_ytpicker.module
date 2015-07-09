@@ -52,6 +52,35 @@ function webform_ytpicker_component_form($component) {
     '#type' => 'fieldset',
     '#title' => 'Youtube picker',
   );
+  $use_nodes = isset($component['extra']['yt']['use_nodes']) ? $component['extra']['yt']['use_nodes'] : false;
+  $form['extra']['yt']['use_nodes'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use nodes with youtube field'),
+    '#default_value' => $use_nodes,
+  );
+  $contenttypes = node_type_get_types();
+  $field_options = array();
+  $field_options[0] = t(' -- pick a contenttype and field -- ');
+  foreach($contenttypes as $key => $ct) {
+    $options[$key] = $ct->name;
+  }
+
+  $fields = field_info_fields();
+  foreach($fields as $field) {
+    if ($field['type'] == 'youtube') {
+      foreach($field['bundles'] as $bundle_key => $bundle) {
+        $field_options[$bundle_key][$field['field_name']] = $field['field_name'];
+      }
+    }
+  }
+
+  $nodes_field = isset($component['extra']['yt']['nodes_field']) ? $component['extra']['yt']['nodes_field'] : false;
+  $form['extra']['yt']['nodes_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Contenttype with youtube field'),
+    '#default_value' => $nodes_field,
+    '#options' => $field_options,
+  );
   $width = isset($component['extra']['yt']['width']) ? $component['extra']['yt']['width'] : '560';
   $form['extra']['yt']['width'] = array(
     '#type' => 'textfield',

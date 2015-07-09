@@ -48,7 +48,7 @@ function _webform_edit_ytpicker($component) {
  */
 function _webform_render_ytpicker($component, $value = NULL, $filter = TRUE) {
   $node = isset($component['nid']) ? node_load($component['nid']) : NULL;
-  $videos = _webform_ytpicker_options($component);
+  $videos = _webform_ytpicker_options($component, 'render');
   _webform_ytpicker_add_analysis_data($videos, $component);
   $width = $component['extra']['yt']['width'];
   $height = $component['extra']['yt']['height'];
@@ -133,7 +133,7 @@ function _webform_display_ytpicker($component, $value, $format = 'html') {
 function theme_webform_display_ytpicker($variables) {
   $element = $variables['element'];
   $component = $element['#webform_component'];
-  $videos = _webform_ytpicker_options($component);
+  $videos = _webform_ytpicker_options($component, 'display');
   $width = $component['extra']['yt']['width'];
   $height = $component['extra']['yt']['height'];
 
@@ -151,7 +151,7 @@ function theme_webform_display_ytpicker($variables) {
  * Implements hook_webform_analysis_component().
  */
 function _webform_analysis_ytpicker($component, $sids = array(), $single = FALSE, $join = NULL) {
-  $videos = _webform_ytpicker_options($component);
+  $videos = _webform_ytpicker_options($component, 'analysis');
   // Create a generic query for the component.
   $query = db_select('webform_submitted_data', 'wsd', array('fetch' => PDO::FETCH_ASSOC))
     ->condition('wsd.nid', $component['nid'])
@@ -211,7 +211,7 @@ function _webform_ytpicker_get_by_ytib($id, $videos) {
  * Implements hook_webform_table_component().
  */
 function _webform_table_ytpicker($component, $value) {
-  $videos = _webform_ytpicker_options($component);
+  $videos = _webform_ytpicker_options($component, 'table');
   $video = _webform_ytpicker_get_by_ytib($value[0], $videos);
   return check_plain(empty($video->name) ? '' : $video->name);
 }
@@ -230,7 +230,7 @@ function _webform_csv_headers_ytpicker($component, $export_options) {
  * Implements hook_webform_csv_data_component().
  */
 function _webform_csv_data_ytpicker($component, $export_options, $value) {
-  $videos = _webform_ytpicker_options($component);
+  $videos = _webform_ytpicker_options($component, 'csv');
   $video = _webform_ytpicker_get_by_ytib($value[0], $videos);
   return !isset($video->name) ? '' : $video->name;
 }
@@ -242,6 +242,10 @@ function _webform_ytpicker_add_analysis_data(&$videos, $component) {
   $rows = array();
   $other = array();
   $normal_count = 0;
+  $options = array();
+  if(empty($options)) {
+    return array();
+  }
   foreach ($videos as $video) {
     $options[] = $video->ytid;
   }
@@ -279,20 +283,41 @@ function _webform_ytpicker_add_analysis_data(&$videos, $component) {
 /**
  * Generate a list of options for a select list.
  */
-function _webform_ytpicker_options($component) {
-  $videos = array();
-  $lines = explode(PHP_EOL, $component['extra']['yt']['ytp']);
-  $i = 0;
-  foreach ($lines as $line) {
-    $exp = explode('|', $line);
-    $vid = new stdClass();
-    $vid->id = $i;
-    $vid->name = $exp[0];
-    $vid->url = $exp[1];
-    $vid->ytid = _webform_ytpicker_video_id(trim($exp[1]));
-    $videos[] = $vid;
-    $i++;
+function _webform_ytpicker_options($component, $hook) {
+  if ($component['extra']['yt']['use_nodes']) {
+    $field = field_info_field($component['extra']['yt']['nodes_field']);
+    $table_name = array_keys($field['storage']['details']['sql']['FIELD_LOAD_CURRENT'])[0];
+    $query = 'select * from '.$table_name.' where 1';
+    $res = db_query($query, array());
+    $i = 0;
+    foreach ($res as $item) {
+      //var_dump($item);
+      $vid = new stdClass();
+      $vid->id = $i;
+      $vid->bundle = $item->bundle;
+      $vid->entity_type = $item->entity_type;
+      $vid->entity_id = $item->entity_id;
+      $vid->name = $item->field_youtube_video_video_id;
+      $vid->url = $item->field_youtube_video_input;
+      $vid->ytid = $item->field_youtube_video_video_id;
+      $videos[] = $vid;
+      $i++;
+    }
+  }else{
+    $videos = array();
+    $lines = explode(PHP_EOL, $component['extra']['yt']['ytp']);
+    $i = 0;
+    foreach ($lines as $line) {
+      $exp = explode('|', $line);
+      $vid = new stdClass();
+      $vid->id = $i;
+      $vid->name = $exp[0];
+      $vid->url = $exp[1];
+      $vid->ytid = _webform_ytpicker_video_id(trim($exp[1]));
+      $videos[] = $vid;
+      $i++;
+    }
   }
-
+  drupal_alter('webform_ytpicker_videos_list', $videos, $hook);
   return $videos;
 }

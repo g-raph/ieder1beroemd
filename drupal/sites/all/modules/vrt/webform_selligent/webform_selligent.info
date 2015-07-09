@@ -1,0 +1,6 @@
+name = Webform Selligent
+description = "Let user forward data to selligent"
+package = Webform
+core = 7.x
+;configure = admin/config
+files[] = webform_selligent.module
