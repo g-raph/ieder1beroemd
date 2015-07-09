@@ -74,72 +74,11 @@
  */
 ?>
 
-<div class="main-sidebar open">
-  <i class="fa fa-bars togglebutton"></i>
-  <i class="fa fa-times closebutton"></i>
-  <?php if ($logo): ?>
-    <a class="logo navbar-btn pull-left" href="<?php print $front_page; ?>">
-      <?php include("sites/all/themes/admintheme/images/logo-admintheme.svg"); ?>
-    </a>
-  <?php endif; ?>
-
-  <?php if (!empty($site_name)): ?>
-    <a class="name navbar-brand" href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>"><?php print $site_name; ?></a>
-  <?php endif; ?>
-
-  <?php if (!empty($primary_nav)): ?>
-    <div class="primary-menu">
-        <?php if (!empty($primary_nav)): ?>
-          <?php print render($primary_nav); ?>
-        <?php endif; ?>
-    </div>
-  <?php endif; ?>
-
-  <?php if (!empty($page['main_sidebar'])): ?>
-    <?php print render($page['main_sidebar']); ?>
-  <?php endif; ?>
-</div>
-
-<nav class="navbar navbar-inverse navbar-fixed-top">
-  <div class="container-fluid">
-    <a class="menu-sec-button"><i class="fa fa-user"></i></a>
-    <?php if (!empty($secondary_nav)): ?>
-      <?php print render($secondary_nav); ?>
-    <?php endif; ?>
-    <a class="menu-login-button"><i class="fa fa-user"></i></a>
-    <ul class="loginmenu">
-      <li><a href="/user">Login</a></li>
-      <li><a href="/user/register">Create new account</a></li>
-      <li><a href="/user/password">Request new password</a></li>
-    </ul>
-    <?php if (!empty($page['navigation'])): ?>
-      <?php print render($page['navigation']); ?>
-    <?php endif; ?>
-  </div>
-</nav>
-
 <div class="main-container container-fluid">
-
-  <header role="banner" id="page-header">
-    <?php if (!empty($site_slogan)): ?>
-      <p class="lead"><?php print $site_slogan; ?></p>
-    <?php endif; ?>
-
-    <?php print render($page['header']); ?>
-  </header> <!-- /#page-header -->
 
   <div class="row">
 
-    <?php if (!empty($page['sidebar_first'])): ?>
-      <aside class="col-sm-3" role="complementary">
-        <?php print render($page['sidebar_first']); ?>
-      </aside>  <!-- /#sidebar-first -->
-    <?php endif; ?>
-
     <section<?php print $content_column_class; ?>>
-      <?php if (!empty($page['highlighted'])): ?>
-        <div class="highlighted jumbotron"><?php print render($page['highlighted']); ?></div>
-      <?php endif; ?>
       <?php if (!empty($breadcrumb)): print $breadcrumb; endif;?>
       <a id="main-content"></a>
       <?php print render($title_prefix); ?>
@@ -151,20 +90,8 @@
       <?php if (!empty($tabs)): ?>
         <?php print render($tabs); ?>
       <?php endif; ?>
-      <?php if (!empty($page['help'])): ?>
-        <?php print render($page['help']); ?>
-      <?php endif; ?>
-      <?php if (!empty($action_links)): ?>
-        <ul class="action-links"><?php print render($action_links); ?></ul>
-      <?php endif; ?>
       <?php print render($page['content']); ?>
     </section>
-
-    <?php if (!empty($page['sidebar_second'])): ?>
-      <aside class="col-sm-3" role="complementary">
-        <?php print render($page['sidebar_second']); ?>
-      </aside>  <!-- /#sidebar-second -->
-    <?php endif; ?>
 
   </div>
   <footer class="footer">

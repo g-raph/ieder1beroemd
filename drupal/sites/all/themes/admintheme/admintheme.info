@@ -41,6 +41,7 @@ stylesheets[all][] = css/custom.css
 ; ;; Scripts
 ; ;;;;;;;;;;;;;;;;;;;;;
 
+scripts[] = 'js/flexslider.js'
 scripts[] = 'js/custom.js'
 
 ; 
