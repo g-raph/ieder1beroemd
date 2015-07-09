@@ -172,7 +172,6 @@ function iedereenberoemd_ds_fields_info($entity_type) {
 function _iedereenberoemd_ds_render_thumbnail($field){
   $node = $field['entity'];
   $vid_id = $node->field_youtube_video['und'][0]['video_id'];
-  var_dump($vid_id);
   $url = 'http://img.youtube.com/vi/' . $vid_id . '/0.jpg';
   $img = '<img src="' . $url . '" class="youtubethumb">';
   return $img;
