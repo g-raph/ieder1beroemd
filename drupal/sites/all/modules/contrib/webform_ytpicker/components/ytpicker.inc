@@ -290,14 +290,15 @@ function _webform_ytpicker_options($component, $hook) {
     $query = 'select * from '.$table_name.' where 1';
     $res = db_query($query, array());
     $i = 0;
+
     foreach ($res as $item) {
-      //var_dump($item);
+      $node = node_load($item->entity_id);
       $vid = new stdClass();
       $vid->id = $i;
       $vid->bundle = $item->bundle;
       $vid->entity_type = $item->entity_type;
       $vid->entity_id = $item->entity_id;
-      $vid->name = $item->field_youtube_video_video_id;
+      $vid->name = $node->title;
       $vid->url = $item->field_youtube_video_input;
       $vid->ytid = $item->field_youtube_video_video_id;
       $videos[] = $vid;
