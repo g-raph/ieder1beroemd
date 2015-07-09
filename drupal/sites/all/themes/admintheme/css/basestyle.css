@@ -141,6 +141,9 @@ ul.tabs--primary li.active a:hover {
   color: #fff;
   border: 0;
 }
+.alert {
+  text-align: center;
+}
 .main-container {
   padding: 50px 100px;
   width: 100%;
@@ -164,10 +167,20 @@ ul.tabs--primary li.active a:hover {
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:first-child > .video-thumb {
   position: absolute;
   left: -250px;
-  top: 23px;
+  top: 11px;
   z-index: 999;
   width: 102px;
   max-width: none;
+}
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:first-child > label {
+  position: absolute;
+  left: -226px;
+  top: 90px;
+}
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:first-child > input.form-radio {
+  position: absolute;
+  left: -226px;
+  top: 90px;
 }
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:nth-child(2) {
   left: 315px;
@@ -176,13 +189,25 @@ ul.tabs--primary li.active a:hover {
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:nth-child(2) > .video-thumb {
   position: absolute;
   left: -250px;
-  top: 139px;
+  top: 127px;
   z-index: 999;
   width: 102px;
   max-width: none;
 }
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:nth-child(2) iframe {
   display: none;
+}
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:nth-child(2) > label {
+  position: absolute;
+  left: -226px;
+  top: 206px;
+  z-index: 99999;
+}
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:nth-child(2) > input.form-radio {
+  position: absolute;
+  left: -226px;
+  top: 206px;
+  z-index: 99999;
 }
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:last-child {
   left: 315px;
@@ -191,7 +216,7 @@ ul.tabs--primary li.active a:hover {
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:last-child > .video-thumb {
   position: absolute;
   left: -250px;
-  top: 255px;
+  top: 243px;
   z-index: 999;
   width: 102px;
   max-width: none;
@@ -199,10 +224,37 @@ ul.tabs--primary li.active a:hover {
 .main-container .region-content #edit-submitted-pick-a-video > .form-item:last-child iframe {
   display: none;
 }
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:last-child > label {
+  position: absolute;
+  left: -226px;
+  top: 321px;
+  z-index: 99999;
+}
+.main-container .region-content #edit-submitted-pick-a-video > .form-item:last-child > input.form-radio {
+  position: absolute;
+  left: -226px;
+  top: 321px;
+  z-index: 99999;
+}
 .main-container .region-content button.webform-submit {
   position: absolute;
-  left: 580px;
-  top: 506px;
+  left: 62px;
+  padding: 5px 34px;
+  top: 459px;
+}
+.main-container .region-content .webform-confirmation {
+  position: absolute;
+  top: 100px;
+  left: 330px;
+  height: 364px;
+  width: 570px;
+  text-align: center;
+  background-color: #ffebc4;
+  font-size: 40px;
+  padding-top: 114px;
+}
+.main-container .region-content .form-type-radios.form-item-submitted-pick-a-video.form-item.form-group > label {
+  display: none;
 }
 .main-container .region-content #block-iedereenberoemd-iedereemberoemd-winners {
   position: absolute;

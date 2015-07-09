@@ -94,8 +94,5 @@
     </section>
 
   </div>
-  <footer class="footer">
-    <?php print render($page['footer']); ?>
-  </footer>
 </div>
 
